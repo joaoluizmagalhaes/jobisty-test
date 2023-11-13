@@ -10,13 +10,23 @@
       <div
         v-for="(day, dayIndex) in week"
         :key="dayIndex"
-        class="w-full h-20 border p-2"
+        class="w-full h-20 border p-1 flex justify-end relative overflow-hidden"
         :class="{
           'bg-gray-100': !day.isCurrentMonth,
           'text-blue': day.isWeekend
         }" >
-        {{ day.day }}
-        <div class=""></div>
+        <span class="absolute top-1 left-1">{{ day.day }}</span>
+        <div class="reminder-chips flex justify-end overflow-scroll h-full">
+          <q-chip
+            v-for="reminder in getRemindersForDate(day.date)"
+            :key="reminder.id"
+            :color="reminder.color.toLowerCase()"
+            text-color="white"
+            class="text-xs"
+          >
+            {{ reminder.time}}
+          </q-chip>
+        </div>
       </div>
     </div>
     <q-btn class="mt-6" label="Add Reminder" color="primary" @click="showReminderModal = true" />
@@ -102,7 +112,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { getMonth, getYear, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, format } from 'date-fns';
+import { getMonth, getYear, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, format, formatISO, parseISO, isValid  } from 'date-fns';
 import { useCalendarStore } from '../stores/calendar';
 
 const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -208,5 +218,26 @@ function validateReminder(reminder) {
 
   return isValid;
 }
+
+function getRemindersForDate(date) {
+  return calendarStore.reminder.filter(reminder => {
+    const isoDate = convertDateToISOFormat(reminder.date);
+
+    const parsedDate = parseISO(isoDate);
+    if (!isValid(parsedDate)) {
+      console.error('Data inválida encontrada no lembrete:', isoDate);
+      return false;
+    }
+
+    const formattedDate = format(parsedDate, 'yyyy-MM-dd');
+    return formattedDate === date;
+  });
+}
+
+
+function convertDateToISOFormat(dateString) {
+  return dateString.replace(/\//g, '-');
+}
+
 
 </script>
