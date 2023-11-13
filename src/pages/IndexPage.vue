@@ -1,17 +1,13 @@
 <template>
-  <q-page class="flex flex-center">
-    <img
-      alt="Quasar logo"
-      src="~assets/quasar-logo-vertical.svg"
-      style="width: 200px; height: 200px"
-    >
+  <q-page class="flex justify-center items-center">
+    <CalendarView />
+
   </q-page>
 </template>
 
-<script>
-import { defineComponent } from 'vue'
+<script setup>
+//import { ref, onMounted } from 'vue'
+import CalendarView from 'src/components/CalendarView.vue';
 
-export default defineComponent({
-  name: 'IndexPage'
-})
+
 </script>
