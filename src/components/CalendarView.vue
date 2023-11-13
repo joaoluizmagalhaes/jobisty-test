@@ -7,8 +7,16 @@
       </div>
     </div>
     <div class="grid grid-cols-7" v-for="(week, weekIndex) in daysInMonth" :key="weekIndex">
-      <div class="w-full h-20 border p-2" v-for="(day, dayIndex) in week" :key="dayIndex">
+      <div
+        v-for="(day, dayIndex) in week"
+        :key="dayIndex"
+        class="w-full h-20 border p-2"
+        :class="{
+          'bg-gray-100': !day.isCurrentMonth,
+          'text-blue': day.isWeekend
+        }" >
         {{ day.day }}
+        <div class=""></div>
       </div>
     </div>
   </div>
@@ -17,7 +25,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { getMonth, getYear, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, format } from 'date-fns';
+import { getMonth, getYear, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, addDays, format } from 'date-fns';
 
 const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const currentDate = new Date();
@@ -34,22 +42,26 @@ function calculateDaysInMonth() {
   const end = endOfMonth(new Date(year, month));
   const startWeek = startOfWeek(start);
   const endWeek = endOfWeek(end);
-  const days = eachDayOfInterval({ start: startWeek, end: endWeek });
 
+  let days = [];
+  for (let d = startWeek; d <= endWeek; d = addDays(d, 1)) {
+    days.push({
+      date: format(d, 'yyyy-MM-dd'),
+      day: format(d, 'd'),
+      isCurrentMonth: d >= start && d <= end,
+      isWeekend: d.getDay() === 0 || d.getDay() === 6 // Correto para verificar sábado e domingo
+    });
+  }
+
+  // Agrupa os dias em semanas
   let week = [];
   days.forEach(day => {
-    if (week.length && day.getDay() === 0) {
+    week.push(day);
+    if (week.length === 7) {
       daysInMonth.value.push(week);
       week = [];
     }
-    week.push({
-      date: format(day, 'yyyy-MM-dd'),
-      day: day >= start && day <= end ? format(day, 'd') : ''
-    });
   });
-  if (week.length) {
-    daysInMonth.value.push(week);
-  }
 }
 </script>
 
