@@ -228,7 +228,6 @@ function saveNewReminder() {
 
 function updateReminder(reminderToUpdate) {
   const index = calendarStore.reminder.findIndex(reminder => reminder.id === reminderToUpdate.id);
-  console.log(index)
   if (index !== -1) {
     calendarStore.reminder[index] = reminderToUpdate;
     showReminderModal.value = false;
