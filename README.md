@@ -4,7 +4,7 @@ A Quasar Project
 
 ## Install the dependencies
 ```bash
-yarn
+yarn install
 # or
 npm install
 ```

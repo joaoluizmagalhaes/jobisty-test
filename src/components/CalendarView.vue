@@ -22,16 +22,17 @@
             :key="reminder.id"
             :color="reminder.color.toLowerCase()"
             text-color="white"
-            class="text-xs"
+            class="text-xs cursor-pointer"
+            clickable
+            @click="openViewModal(reminder)"
           >
             {{ reminder.time}}
           </q-chip>
         </div>
       </div>
     </div>
-    <q-btn class="mt-6" label="Add Reminder" color="primary" @click="showReminderModal = true" />
+    <q-btn class="mt-6" label="Add Reminder" color="primary" @click="openAddNewReminder" />
 
-    <!-- Diálogo para Adicionar Lembrete -->
     <q-dialog v-model="showReminderModal" >
       <q-card class="w-96">
         <q-card-section>
@@ -39,7 +40,7 @@
         </q-card-section>
 
         <q-card-section>
-          <q-form @submit="saveReminder">
+          <q-form @submit="saveNewReminder">
             <q-input
               v-model="reminder.text"
               maxlength="30"
@@ -72,7 +73,7 @@
               <template v-slot:append>
                 <q-icon name="event" class="cursor-pointer">
                   <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-                    <q-date v-model="reminder.date">
+                    <q-date v-model="reminder.date" minimal>
                       <div class="row items-center justify-end">
                         <q-btn v-close-popup label="Close" color="primary" flat />
                       </div>
@@ -101,19 +102,45 @@
                 </q-icon>
               </template>
             </q-input>
-            <q-btn label="Save" type="submit" color="primary" class="mt-6" />
+            <q-btn label="Add new" type="submit" color="primary" class="mt-6" v-if="!reminder.id" />
+            <q-btn label="Save changes" color="primary" class="mt-6" @click="updateReminder(reminder)" v-else />
           </q-form>
         </q-card-section>
       </q-card>
     </q-dialog>
+
+    <q-dialog v-model="showViewModal">
+      <q-card class="w-96">
+        <q-card-section class="flex justify-between">
+          <div class="text-h6">Reminder Details</div>
+          <q-space />
+          <q-btn icon="close" flat round dense v-close-popup />
+        </q-card-section>
+
+        <q-card-section>
+          <div><strong>Text:</strong> {{ selectedReminder.text }}</div>
+          <div><strong>City:</strong> {{ selectedReminder.city }}</div>
+          <div><strong>Date:</strong> {{ formatDate(selectedReminder.date) }}</div>
+          <div><strong>Time:</strong> {{ selectedReminder.time }}</div>
+          <div v-if="forecast"><strong>Weather:</strong> {{ forecast.weather[0].main }}</div>
+        </q-card-section>
+
+        <q-card-section class="flex justify-end">
+          <q-btn label="Edit" color="secondary" @click="openEditModal(selectedReminder)" />
+        </q-card-section>
+      </q-card>
+    </q-dialog>
+
   </div>
 </template>
 
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { getMonth, getYear, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, format, formatISO, parseISO, isValid  } from 'date-fns';
+import { getMonth, getYear, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, format, parseISO, isValid  } from 'date-fns';
 import { useCalendarStore } from '../stores/calendar';
+import axios from 'axios';
+import { useQuasar } from 'quasar';
 
 const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const currentDate = new Date();
@@ -126,6 +153,7 @@ const reminder = ref({
   city: '',
   color: '',
   time: '',
+  id: null,
   date: new Date().toISOString()
 });
 const colorOptions = ['Red', 'Green', 'Blue', 'Yellow', 'Purple'];
@@ -137,6 +165,17 @@ const formErrors = ref({
   dateError: '',
   timeError: ''
 });
+const showViewModal = ref(false);
+const selectedReminder = ref({
+  textError: '',
+  cityError: '',
+  colorError: '',
+  dateError: '',
+  timeError: '',
+  id: null
+})
+const $q = useQuasar();
+const forecast = ref(null);
 
 onMounted(() => {
   calculateDaysInMonth();
@@ -169,13 +208,33 @@ function calculateDaysInMonth() {
   });
 }
 
-function saveReminder() {
+function emptyLocalReminder() {
+  reminder.value = { text: '', city: '', color: '', time: '', id: null, date: new Date().toISOString() };
+}
+
+function openAddNewReminder() {
+  showReminderModal.value = true
+  emptyLocalReminder()
+}
+
+function saveNewReminder() {
   if (validateReminder(reminder.value)) {
     const newReminder = { ...reminder.value, id: Date.now() };
     calendarStore.reminder.push(newReminder);
     showReminderModal.value = false;
-    reminder.value = { text: '', city: '', color: '', time: '', date: new Date().toISOString() };
+    emptyLocalReminder()
   }
+}
+
+function updateReminder(reminderToUpdate) {
+  const index = calendarStore.reminder.findIndex(reminder => reminder.id === reminderToUpdate.id);
+  console.log(index)
+  if (index !== -1) {
+    calendarStore.reminder[index] = reminderToUpdate;
+    showReminderModal.value = false;
+    emptyLocalReminder();
+  }
+
 }
 
 function validateReminder(reminder) {
@@ -234,10 +293,68 @@ function getRemindersForDate(date) {
   });
 }
 
-
 function convertDateToISOFormat(dateString) {
   return dateString.replace(/\//g, '-');
 }
 
+async function openViewModal(reminder) {
+  $q.loading.show();
+  selectedReminder.value = { ...reminder };
+
+  // Chamar a função fetchWeather para obter a previsão do tempo
+  const weatherData = await fetchWeather(reminder.city);
+
+  if (weatherData) {
+    const reminderDateUTC = formatDate(reminder.date);
+
+    forecast.value = weatherData.list.find(forecast => {
+      const forecastDate = new Date(forecast.dt * 1000).toLocaleDateString('en-US');
+
+      return forecastDate === reminderDateUTC;
+    });
+
+    showViewModal.value = true;
+  } else {
+    // Tratar caso não haja dados de previsão do tempo
+    forecast.value = null;
+  }
+
+  $q.loading.hide();
+}
+
+
+function openEditModal(reminderToEdit) {
+  reminder.value = { ...reminderToEdit };
+  showViewModal.value = false;
+  showReminderModal.value = true;
+}
+
+function formatDate(dateString) {
+  const isoFormattedString = dateString.replace(/\//g, '-');
+
+  try {
+    const date = parseISO(isoFormattedString);
+    return format(date, 'MM/dd/yyyy');
+  } catch (error) {
+    alert('Error formatting the date:' + error);
+    return 'Invalid Date';
+  }
+}
+
+async function fetchWeather(city) {
+  try {
+    // Primeira chamada para obter latitude e longitude da cidade
+    const response = await axios.get(`https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${import.meta.env.VITE_OPEN_WEATHER_API_KEY}`);
+    const { lat, lon } = response.data.coord;
+
+    // Segunda chamada para obter a previsão do tempo usando as coordenadas
+    const forecastResponse = await axios.get(`https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${import.meta.env.VITE_OPEN_WEATHER_API_KEY}`);
+    return forecastResponse.data; // Retorna os dados da previsão do tempo
+
+  } catch (error) {
+    console.error('Erro ao buscar previsão do tempo:', error);
+    return null;
+  }
+}
 
 </script>
