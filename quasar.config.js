@@ -22,7 +22,11 @@ module.exports = configure(function (/* ctx */) {
       warnings: true,
       errors: true
     },
-
+    test: {
+      // Config vitest
+      globals: true,
+      environment: 'jsdom',
+    },
     // https://v2.quasar.dev/quasar-cli-vite/prefetch-feature
     // preFetch: true,
 

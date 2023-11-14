@@ -1,5 +1,6 @@
 <template>
-  <div class="flex flex-col items-end max-w-[700px] w-full px-5">
+  <div class="flex flex-col items-end max-w-[700px] w-full px-2 lg:px-5">
+    <h1 class="text-5xl font-bold text-primary self-start ">{{ monthName }}</h1>
     <div class="grid grid-cols-7 w-full">
       <div class="flex justify-center bg-primary text-white border" v-for="day in daysOfWeek" :key="day">
         <span class="hidden sm:!flex ">{{ day }}</span>
@@ -16,13 +17,13 @@
           'text-blue': day.isWeekend
         }" >
         <span class="absolute top-1 left-1">{{ day.day }}</span>
-        <div class="reminder-chips flex justify-end overflow-scroll h-full">
+        <div class="reminder-chips flex justify-end overflow-scroll h-full mt-5 md:mt-0">
           <q-chip
             v-for="reminder in getRemindersForDate(day.date)"
             :key="reminder.id"
             :color="reminder.color.toLowerCase()"
             text-color="white"
-            class="text-xs cursor-pointer"
+            class="text-xs cursor-pointer w-full m-0 md:m-1 p-1 md:px-3 md:py-2"
             clickable
             @click="openViewModal(reminder)"
           >
@@ -44,12 +45,14 @@
             <q-input
               v-model="reminder.text"
               maxlength="30"
+              name="text"
               label="Reminder Text"
               :error="formErrors.textError !== ''"
               :error-message="formErrors.textError"
             />
             <q-input
               v-model="reminder.city"
+              name="city"
               label="City"
               :error="formErrors.cityError !== ''"
               :error-message="formErrors.cityError"
@@ -58,6 +61,7 @@
               v-model="reminder.color"
               :options="colorOptions"
               label="Color"
+              name="color"
               class="mb-6"
               :error="formErrors.colorError !== ''"
               :error-message="formErrors.colorError"
@@ -66,6 +70,7 @@
               filled
               v-model="reminder.date"
               mask="date"
+              name="date"
               :rules="['date']"
               :error="formErrors.dateError !== ''"
               :error-message="formErrors.dateError"
@@ -86,6 +91,7 @@
               filled
               v-model="reminder.time"
               mask="time"
+              name="time"
               :rules="['time']"
               :error="formErrors.timeError !== ''"
               :error-message="formErrors.timeError"
@@ -145,6 +151,7 @@ import { useQuasar } from 'quasar';
 const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const currentDate = new Date();
 const month = getMonth(currentDate);
+const monthName = ref('');
 const year = getYear(currentDate);
 const daysInMonth = ref([]);
 const showReminderModal = ref(false);
@@ -179,6 +186,7 @@ const forecast = ref(null);
 
 onMounted(() => {
   calculateDaysInMonth();
+  monthName.value = format(currentDate, 'MMMM / yy');
 });
 
 function calculateDaysInMonth() {
@@ -321,7 +329,6 @@ async function openViewModal(reminder) {
   $q.loading.hide();
 }
 
-
 function openEditModal(reminderToEdit) {
   reminder.value = { ...reminderToEdit };
   showViewModal.value = false;
@@ -343,11 +350,11 @@ function formatDate(dateString) {
 async function fetchWeather(city) {
   try {
     // Primeira chamada para obter latitude e longitude da cidade
-    const response = await axios.get(`https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${import.meta.env.VITE_OPEN_WEATHER_API_KEY}`);
+    const response = await axios.get(`https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${calendarStore.weatherAPIKey}`);
     const { lat, lon } = response.data.coord;
 
     // Segunda chamada para obter a previsão do tempo usando as coordenadas
-    const forecastResponse = await axios.get(`https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${import.meta.env.VITE_OPEN_WEATHER_API_KEY}`);
+    const forecastResponse = await axios.get(`https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${calendarStore.weatherAPIKey}`);
     return forecastResponse.data; // Retorna os dados da previsão do tempo
 
   } catch (error) {
