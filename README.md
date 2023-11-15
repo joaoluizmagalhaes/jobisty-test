@@ -61,7 +61,7 @@ quasar build
 ```
 
 # Customizing Configuration
-See Configuring quasar.config.js for more details.
+See Configuring <a href="https://v2.quasar.dev/quasar-cli-vite/quasar-config-js" target="_blank">Configuring quasar.config.js</a> for more details.
 
 # Known Issues
 Unit testing: Vitest has been installed, but there were issues running tests due to configuration challenges with Quasar and Vite. I've searched for a solution, but all get the same results.
