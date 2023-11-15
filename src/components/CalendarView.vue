@@ -1,6 +1,11 @@
 <template>
   <div class="flex flex-col items-end max-w-[700px] w-full px-2 lg:px-5">
-    <h1 class="text-5xl font-bold text-primary self-start ">{{ monthName }}</h1>
+    <div class="flex justify-between w-full mb-6">
+      <q-btn flat icon="chevron_left" color="primary" @click="changeMonth(-1)" />
+      <h1 class="text-5xl font-bold text-primary self-center ">{{ monthName }}</h1>
+      <q-btn flat icon="chevron_right" color="primary" @click="changeMonth(1)" />
+    </div>
+
     <div class="grid grid-cols-7 w-full">
       <div class="flex justify-center bg-primary text-white border" v-for="day in daysOfWeek" :key="day">
         <span class="hidden sm:!flex ">{{ day }}</span>
@@ -23,7 +28,7 @@
             :key="reminder.id"
             :color="reminder.color.toLowerCase()"
             text-color="white"
-            class="text-xs cursor-pointer w-full m-0 md:m-1 p-1 md:px-3 md:py-2"
+            class="text-xs cursor-pointer m-0 md:m-1 p-1 md:px-3 md:py-2"
             clickable
             @click="openViewModal(reminder)"
           >
@@ -143,16 +148,16 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { getMonth, getYear, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, format, parseISO, isValid  } from 'date-fns';
+import { addMonths, getMonth, getYear, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, format, parseISO, isValid  } from 'date-fns';
 import { useCalendarStore } from '../stores/calendar';
 import axios from 'axios';
 import { useQuasar } from 'quasar';
 
 const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const currentDate = new Date();
-const month = getMonth(currentDate);
+const month = ref(getMonth(currentDate));
 const monthName = ref('');
-const year = getYear(currentDate);
+const year = ref(getYear(currentDate));
 const daysInMonth = ref([]);
 const showReminderModal = ref(false);
 const reminder = ref({
@@ -187,11 +192,33 @@ const forecast = ref(null);
 onMounted(() => {
   calculateDaysInMonth();
   monthName.value = format(currentDate, 'MMMM / yy');
-});
+})
 
-function calculateDaysInMonth() {
-  const start = startOfMonth(new Date(year, month));
-  const end = endOfMonth(new Date(year, month));
+const changeMonth = (offset) => {
+  const currentMonth = currentDate.getMonth();
+  const newMonth = currentMonth + offset;
+
+  if (newMonth > 11) {
+    currentDate.setFullYear(currentDate.getFullYear() + 1);
+    currentDate.setMonth(0);
+  } else if (newMonth < 0) {
+    currentDate.setFullYear(currentDate.getFullYear() - 1);
+    currentDate.setMonth(11);
+  } else {
+    currentDate.setMonth(newMonth);
+  }
+
+  month.value = getMonth(currentDate);
+  year.value = getYear(currentDate);
+  monthName.value = format(currentDate, 'MMMM / yy');
+  calculateDaysInMonth();
+}
+
+const calculateDaysInMonth = () => {
+  daysInMonth.value = []; // Limpa os dias atuais antes de calcular os novos
+
+  const start = startOfMonth(currentDate);
+  const end = endOfMonth(currentDate);
   const startWeek = startOfWeek(start);
   const endWeek = endOfWeek(end);
 
@@ -216,16 +243,16 @@ function calculateDaysInMonth() {
   });
 }
 
-function emptyLocalReminder() {
+const emptyLocalReminder = () => {
   reminder.value = { text: '', city: '', color: '', time: '', id: null, date: new Date().toISOString() };
 }
 
-function openAddNewReminder() {
+const openAddNewReminder = () => {
   showReminderModal.value = true
   emptyLocalReminder()
 }
 
-function saveNewReminder() {
+const saveNewReminder = () => {
   if (validateReminder(reminder.value)) {
     const newReminder = { ...reminder.value, id: Date.now() };
     calendarStore.reminder.push(newReminder);
@@ -234,7 +261,7 @@ function saveNewReminder() {
   }
 }
 
-function updateReminder(reminderToUpdate) {
+const updateReminder = (reminderToUpdate) => {
   const index = calendarStore.reminder.findIndex(reminder => reminder.id === reminderToUpdate.id);
   if (index !== -1) {
     calendarStore.reminder[index] = reminderToUpdate;
@@ -244,7 +271,7 @@ function updateReminder(reminderToUpdate) {
 
 }
 
-function validateReminder(reminder) {
+const validateReminder =(reminder) => {
   let isValid = true;
 
   if (!reminder.text || reminder.text.length > 30) {
@@ -285,26 +312,29 @@ function validateReminder(reminder) {
   return isValid;
 }
 
-function getRemindersForDate(date) {
+const getRemindersForDate = (date) => {
   return calendarStore.reminder.filter(reminder => {
     const isoDate = convertDateToISOFormat(reminder.date);
 
     const parsedDate = parseISO(isoDate);
     if (!isValid(parsedDate)) {
-      console.error('Data inválida encontrada no lembrete:', isoDate);
+      console.error('Invalid date:', isoDate);
       return false;
     }
 
     const formattedDate = format(parsedDate, 'yyyy-MM-dd');
     return formattedDate === date;
+  })
+  .sort((a, b) => {
+    return a.time.localeCompare(b.time);
   });
 }
 
-function convertDateToISOFormat(dateString) {
+const convertDateToISOFormat = (dateString) => {
   return dateString.replace(/\//g, '-');
 }
 
-async function openViewModal(reminder) {
+const openViewModal = async (reminder) => {
   $q.loading.show();
   selectedReminder.value = { ...reminder };
 
@@ -329,13 +359,13 @@ async function openViewModal(reminder) {
   $q.loading.hide();
 }
 
-function openEditModal(reminderToEdit) {
+const openEditModal = (reminderToEdit) => {
   reminder.value = { ...reminderToEdit };
   showViewModal.value = false;
   showReminderModal.value = true;
 }
 
-function formatDate(dateString) {
+const formatDate = (dateString) => {
   const isoFormattedString = dateString.replace(/\//g, '-');
 
   try {
@@ -347,18 +377,16 @@ function formatDate(dateString) {
   }
 }
 
-async function fetchWeather(city) {
+const fetchWeather = async (city) => {
   try {
-    // Primeira chamada para obter latitude e longitude da cidade
     const response = await axios.get(`https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${calendarStore.weatherAPIKey}`);
     const { lat, lon } = response.data.coord;
 
-    // Segunda chamada para obter a previsão do tempo usando as coordenadas
     const forecastResponse = await axios.get(`https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${calendarStore.weatherAPIKey}`);
-    return forecastResponse.data; // Retorna os dados da previsão do tempo
+    return forecastResponse.data;
 
   } catch (error) {
-    console.error('Erro ao buscar previsão do tempo:', error);
+    console.error('Error trying to find forecast weather:', error);
     return null;
   }
 }
