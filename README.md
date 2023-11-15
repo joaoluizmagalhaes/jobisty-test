@@ -21,7 +21,16 @@ To install the project dependencies, run:
 yarn
 # or
 npm install
+
+## Configuration
+
+### .env File
+This project requires an `.env` file for environment variables. You need to create this file in the root of the project.
+
+#### Required Environment Variables
+- `VITE_OPEN_WEATHER_API_KEY`: Your API key for the OpenWeather API.
 ```
+I've also added a .env.example file with the name of the environment variable.
 
 # Running the App
 To start the app in development mode (with hot-code reloading, error reporting, etc.), run:
