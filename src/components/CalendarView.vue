@@ -22,13 +22,23 @@
           'text-blue': day.isWeekend
         }" >
         <span class="absolute top-1 left-1">{{ day.day }}</span>
-        <div class="reminder-chips flex justify-end overflow-scroll h-full mt-5 md:mt-0">
+        <div class="reminder-chips flex justify-end overflow-scroll h-full mt-5 md:mt-5">
+          <q-btn
+            v-if="getRemindersForDate(day.date).length > 0"
+            icon="close"
+            flat
+            round
+            dense
+            size="xs"
+            class="absolute top-1 right-1"
+            @click="deleteAllRemindersForDate(day.date)"
+          />
           <q-chip
             v-for="reminder in getRemindersForDate(day.date)"
             :key="reminder.id"
             :color="reminder.color.toLowerCase()"
             text-color="white"
-            class="text-xs cursor-pointer m-0 md:m-1 p-1 md:px-3 md:py-2"
+            class="text-xs cursor-pointer m-0 mt-2 md:m-1 p-1 md:px-3 md:py-2"
             clickable
             @click="openViewModal(reminder)"
           >
@@ -137,6 +147,7 @@
         </q-card-section>
 
         <q-card-section class="flex justify-end">
+          <q-btn class="mr-7" label="Delete" color="negative" @click="deleteReminder(selectedReminder.id)" />
           <q-btn label="Edit" color="secondary" @click="openEditModal(selectedReminder)" />
         </q-card-section>
       </q-card>
@@ -188,6 +199,7 @@ const selectedReminder = ref({
 })
 const $q = useQuasar();
 const forecast = ref(null);
+
 
 onMounted(() => {
   calculateDaysInMonth();
@@ -386,6 +398,37 @@ const fetchWeather = async (city) => {
     console.error('Error trying to find forecast weather:', error);
     return null;
   }
+}
+
+const deleteReminder = (reminderId) => {
+  $q.dialog({
+    title: 'Confirm',
+    message: 'Would you like to delete this reminder?',
+    cancel: true,
+    persistent: true
+  }).onOk(() => {
+    const index = calendarStore.reminder.findIndex(reminder => reminder.id === reminderId);
+    if (index !== -1) {
+      calendarStore.reminder.splice(index, 1);
+      showViewModal.value = false;
+    }
+  })
+}
+
+const deleteAllRemindersForDate = (date) => {
+  const formatedDate = format(parseISO(date), 'yyyy/MM/dd');
+  const readbleDate = format(parseISO(date), 'MM/dd/yyyy');
+
+  $q.dialog({
+    title: 'Confirm',
+    message: 'Would you like to delete all reminders for ' + readbleDate + '?',
+    cancel: true,
+    persistent: true
+  }).onOk(() => {
+
+    calendarStore.reminder = calendarStore.reminder.filter(reminder => reminder.date !== formatedDate);
+    showViewModal.value = false;
+  })
 }
 
 </script>
