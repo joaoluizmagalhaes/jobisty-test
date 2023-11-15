@@ -148,7 +148,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { addMonths, getMonth, getYear, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, format, parseISO, isValid  } from 'date-fns';
+import { getMonth, getYear, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, format, parseISO, isValid  } from 'date-fns';
 import { useCalendarStore } from '../stores/calendar';
 import axios from 'axios';
 import { useQuasar } from 'quasar';
@@ -215,7 +215,7 @@ const changeMonth = (offset) => {
 }
 
 const calculateDaysInMonth = () => {
-  daysInMonth.value = []; // Limpa os dias atuais antes de calcular os novos
+  daysInMonth.value = [];
 
   const start = startOfMonth(currentDate);
   const end = endOfMonth(currentDate);
@@ -228,11 +228,10 @@ const calculateDaysInMonth = () => {
       date: format(d, 'yyyy-MM-dd'),
       day: format(d, 'd'),
       isCurrentMonth: d >= start && d <= end,
-      isWeekend: d.getDay() === 0 || d.getDay() === 6 // Correto para verificar sábado e domingo
+      isWeekend: d.getDay() === 0 || d.getDay() === 6
     });
   }
 
-  // Agrupa os dias em semanas
   let week = [];
   days.forEach(day => {
     week.push(day);
@@ -271,7 +270,7 @@ const updateReminder = (reminderToUpdate) => {
 
 }
 
-const validateReminder =(reminder) => {
+const validateReminder = (reminder) => {
   let isValid = true;
 
   if (!reminder.text || reminder.text.length > 30) {
@@ -338,7 +337,6 @@ const openViewModal = async (reminder) => {
   $q.loading.show();
   selectedReminder.value = { ...reminder };
 
-  // Chamar a função fetchWeather para obter a previsão do tempo
   const weatherData = await fetchWeather(reminder.city);
 
   if (weatherData) {
@@ -352,7 +350,6 @@ const openViewModal = async (reminder) => {
 
     showViewModal.value = true;
   } else {
-    // Tratar caso não haja dados de previsão do tempo
     forecast.value = null;
   }
 
